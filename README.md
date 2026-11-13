@@ -9,7 +9,7 @@
 ![Docker](https://img.shields.io/badge/Docker-compose-2496ED?style=flat-square&logo=docker&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=flat-square)
 
-🔗 **ใช้งานจริง:** https://saharatyokthuan.github.io/pos-mobile/
+🔗 **ใช้งานจริง:** https://zetxero-main.github.io/pos-mobile/
 
 > ⚠️ หน้าเว็บ (`script-pos.js`) ยังเก็บข้อมูลไว้ใน `localStorage` ของเบราว์เซอร์เครื่องนั้น ๆ เท่านั้น — **ยังไม่ได้เรียก backend API เพื่อบันทึก/ดึงข้อมูล** (ดู [สถาปัตยกรรม](#-สถาปัตยกรรม)) ส่วน `backend/` เป็น API ที่รันแยกได้
 
@@ -78,7 +78,7 @@
 
 ## 🚀 วิธีใช้งาน
 
-- **ออนไลน์:** เปิด https://saharatyokthuan.github.io/pos-mobile/
+- **ออนไลน์:** เปิด https://zetxero-main.github.io/pos-mobile/
 - **ในเครื่อง:** เปิดไฟล์ `index.html` ในเบราว์เซอร์ได้ทันที — ไม่ต้อง build ไม่ต้อง install
 - **รัน backend (ไม่บังคับ):** ดู [backend/README.md](backend/README.md) หรือหัวข้อ docker compose ด้านล่าง
 
