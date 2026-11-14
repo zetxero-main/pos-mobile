@@ -48,6 +48,10 @@ ENV PATH=/home/posuser/.local/bin:$PATH
 # Expose port
 EXPOSE 8000
 
+# ใน container ต้อง bind ทุก interface ให้ nginx/พอร์ตที่ publish เข้าถึงได้
+# (ค่าเริ่มต้นใน config.py คือ 127.0.0.1 สำหรับรันบนมือถือ)
+ENV HOST=0.0.0.0
+
 # Health check
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:8000/api/v1/sync/health || exit 1

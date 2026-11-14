@@ -282,7 +282,7 @@ backend/
 | `DATABASE_URL` | `sqlite+aiosqlite:///./pos_mobile.db` | relative กับ working dir |
 | `DATABASE_ECHO` | `False` | log SQL |
 | `CORS_ORIGINS` | localhost:8000, 127.0.0.1:8000, `file://`, `null` | |
-| `HOST` / `PORT` | `0.0.0.0` / `8000` | |
+| `HOST` / `PORT` | `127.0.0.1` / `8000` | Docker ตั้ง `HOST=0.0.0.0` ใน Dockerfile |
 | `AUTH_ENABLED` | `False` | dev mode (ดู 3.5) |
 | `JWT_SECRET`, `JWT_ALGORITHM`, `ACCESS_TOKEN_EXPIRE_MINUTES`, `REFRESH_TOKEN_EXPIRE_DAYS` | `""`, `HS256`, `15`, `7` | ⚠️ `auth.py` อ่านค่าเหล่านี้จาก `os.environ` ไม่ใช่จาก `settings` |
 | `API_KEY` | `""` | ไม่พบการใช้งานในโค้ด |
@@ -810,7 +810,7 @@ suppliers=data.suppliers||[];
 cd backend
 pip install -r requirements.txt     # CI ใช้ Python 3.12
 alembic upgrade head                 # ⚠️ ทำก่อน start ครั้งแรก (ดู Gotchas)
-python3 run.py                       # http://0.0.0.0:8000, reload ตาม DEBUG
+python3 run.py                       # http://127.0.0.1:8000, reload ตาม DEBUG
 ```
 
 ทดสอบ:

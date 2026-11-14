@@ -23,11 +23,18 @@ class Settings(BaseSettings):
         "http://127.0.0.1:8000",
         "file://",
         "null",
+        # หน้าเว็บบน GitHub Pages เรียก backend บนมือถือเพื่อสำรองข้อมูล
+        "https://zetxero-main.github.io",
     ]
 
-    # Server
-    HOST: str = "0.0.0.0"
+    # Server — ค่าเริ่มต้นรับเฉพาะเครื่องนี้ (AUTH ปิดเป็นค่าเริ่มต้น ถ้าเปิด 0.0.0.0
+    # ใครก็ได้ใน Wi-Fi เดียวกันจะอ่าน/แก้ข้อมูลร้านได้)
+    HOST: str = "127.0.0.1"
     PORT: int = 8000
+
+    # Backup snapshots (POST /api/v1/sync/snapshots)
+    SNAPSHOT_KEEP: int = 30  # เก็บย้อนหลังกี่ชุดต่อร้าน/label
+    SNAPSHOT_MAX_BYTES: int = 10_000_000  # ขนาดสูงสุดต่อชุด (10 MB)
 
     # Auth (ปิดไว้เป็นค่า default — เปิดใน .env เมื่อต้องการ)
     AUTH_ENABLED: bool = False

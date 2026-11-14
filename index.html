@@ -324,6 +324,15 @@ if ('serviceWorker' in navigator) {
         </div>
         <div style="font-size:11px;color:var(--text-muted);margin-top:4px"><svg class="icon" aria-hidden="true"><use href="#i-lightbulb"/></svg> สำรองข้อมูลเก็บไว้เป็นระยะ เผื่อเบราว์เซอร์ล้างแคชหรือเปลี่ยนเครื่อง</div>
         <input type="file" id="backupInput" accept=".json" style="display:none" onchange="importBackupJSON(event)">
+
+        <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+          <div class="form-group"><label for="set-backend-url">สำรองไป backend บนมือถือ</label><input type="url" id="set-backend-url" placeholder="http://127.0.0.1:8000" inputmode="url" autocomplete="off" spellcheck="false" onchange="saveBackendUrl()"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <button class="btn btn-secondary btn-full" onclick="backupToBackend()"><svg class="icon" aria-hidden="true"><use href="#i-archive"/></svg> สำรองไป backend</button>
+            <button class="btn btn-secondary btn-full" onclick="restoreFromBackend()"><svg class="icon" aria-hidden="true"><use href="#i-archive-restore"/></svg> กู้คืนจาก backend</button>
+          </div>
+          <div id="backend-status" style="font-size:11px;color:var(--text-muted);margin-top:4px">ต้องเปิด backend บนมือถือก่อน (cd backend &amp;&amp; python run.py)</div>
+        </div>
       </div>
 
       <!-- ── CATEGORY MAPPING ── -->

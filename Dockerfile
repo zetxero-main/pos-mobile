@@ -19,4 +19,6 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 
 # Run (DEBUG=false เพื่อไม่ให้ reload ใน Docker)
 ENV DEBUG=false
+# ใน container ต้อง bind ทุก interface (ค่าเริ่มต้นใน config.py คือ 127.0.0.1)
+ENV HOST=0.0.0.0
 CMD ["python", "run.py"]

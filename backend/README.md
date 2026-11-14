@@ -2,8 +2,8 @@
 
 ### REST API + WebSocket สำหรับ POS-MOBILE — FastAPI + SQLAlchemy (async) + SQLite
 
-> ⚠️ ปัจจุบัน **frontend (`script-pos.js`) ยังไม่เรียก API นี้เพื่อบันทึกข้อมูล** — แอปยังเก็บข้อมูลใน `localStorage`
-> (เรียกเพียง `HEAD /api/v1/sync/health` ทุก 30 วินาทีเพื่อตรวจสถานะออนไลน์) backend นี้จึงใช้เรียกผ่าน HTTP/Swagger โดยตรงได้ แต่ยังไม่ได้ต่อกับหน้าเว็บ
+> ⚠️ frontend (`script-pos.js`) ยังเก็บข้อมูลหลักใน `localStorage` — ต่อกับ backend นี้แค่ 2 จุด: `HEAD /api/v1/sync/health` (ตรวจสถานะออนไลน์)
+> และปุ่ม "สำรองไป backend" / "กู้คืนจาก backend" → `/api/v1/sync/snapshots` (เก็บไฟล์สำรองทั้งก้อน) — endpoint อื่นใช้ผ่าน HTTP/Swagger โดยตรง
 
 ---
 
@@ -20,6 +20,7 @@
 | ⚙️ **Settings / Category mappings** | key-value settings และ mapping หมวดหมู่ตาม prefix ของรหัสสินค้า |
 | 🏪 **Stores** | หลายร้าน (multi-store) — ข้อมูลแยกตาม `store_id` |
 | 🔄 **Sync / Backup** | รับข้อมูลจาก client (localStorage), สำรอง/กู้คืนข้อมูลทั้งร้าน |
+| 💾 **Backup snapshots** | เก็บไฟล์สำรองของหน้าเว็บทั้งก้อน (ปุ่ม "สำรองไป backend") กู้คืนได้ครบทุกฟิลด์ เก็บย้อนหลัง 30 ชุด ข้อมูลซ้ำไม่เก็บซ้ำ |
 | 🔐 **Auth** (ปิดเป็นค่า default) | JWT (access/refresh), API key (`X-API-Key`), role admin/manager/staff |
 | 📡 **WebSocket** | แจ้งเตือน event แบบ real-time (เช่น `sale_created`, `stock_updated`) |
 
@@ -60,7 +61,7 @@ pip install -r requirements.txt
 
 cp .env.example .env     # แล้วแก้ค่าตามต้องการ (ดูหัวข้อ Environment variables)
 alembic upgrade head     # สร้างตาราง + ร้านเริ่มต้น (ต้องทำก่อนรันครั้งแรก)
-python run.py            # เริ่มที่ http://0.0.0.0:8000
+python run.py            # เริ่มที่ http://127.0.0.1:8000
 ```
 
 - 📖 Swagger UI: http://localhost:8000/docs  ·  ReDoc: `/redoc`  ·  OpenAPI: `/openapi.json`
@@ -136,6 +137,7 @@ alembic revision -m "..."   # สร้าง revision ใหม่ (ตั้�
 | **Category mappings** `/settings/mappings` | `GET ""`, `POST ""`, `POST /bulk`, `GET /{code_prefix}`, `PUT /{code_prefix}`, `DELETE /{code_prefix}` |
 | **Stores** `/stores` | `POST ""`, `GET ""`, `GET /default`, `GET /{store_id}`, `PUT /{store_id}`, `DELETE /{store_id}`, `GET /{store_id}/stats` |
 | **Sync / Backup** `/sync` | `POST ""` (รับข้อมูลจาก client), `GET /backup`, `POST /restore`, `GET /health` |
+| **Backup snapshots** `/sync/snapshots` | `POST` (ส่งไฟล์จาก `exportBackupJSON()` ตรง ๆ — 201 ชุดใหม่ / 200 ข้อมูลซ้ำ), `GET` (รายการ), `GET /latest`, `GET /{id}` — ทุกอันรับ `?label=` เพื่อแยกร้านในหน้าเว็บ (เช่น `store-1`) |
 | **Auth** `/auth` | `POST /register`, `POST /login`, `POST /refresh`, `POST /logout`, `POST /logout-all`, `POST /change-password`, `POST /api-keys`, `GET /api-keys`, `DELETE /api-keys/{key_id}`, `GET /me`, `GET /users`, `GET /users/{user_id}`, `PATCH /users/{user_id}`, `DELETE /users/{user_id}`, `GET /health` |
 
 ### 📡 WebSocket
@@ -157,7 +159,8 @@ alembic revision -m "..."   # สร้าง revision ใหม่ (ตั้�
 | `DATABASE_URL` | `sqlite+aiosqlite:///./pos_mobile.db` | SQLAlchemy async URL |
 | `DATABASE_ECHO` | `False` | แสดง SQL log |
 | `CORS_ORIGINS` | `["http://localhost:8000","http://127.0.0.1:8000","file://","null"]` | JSON list ของ origin ที่อนุญาต |
-| `HOST` / `PORT` | `0.0.0.0` / `8000` | ที่อยู่/พอร์ตของเซิร์ฟเวอร์ |
+| `HOST` / `PORT` | `127.0.0.1` / `8000` | ที่อยู่/พอร์ตของเซิร์ฟเวอร์ — `127.0.0.1` รับเฉพาะเครื่องนี้; อย่าเปลี่ยนเป็น `0.0.0.0` ถ้ายังไม่เปิด `AUTH_ENABLED` (Docker ตั้ง `0.0.0.0` ให้เองใน Dockerfile) |
+| `SNAPSHOT_KEEP` / `SNAPSHOT_MAX_BYTES` | `30` / `10000000` | จำนวน snapshot ที่เก็บย้อนหลังต่อร้าน และขนาดสูงสุดต่อชุด |
 | `DATA_DIR` | `~/pos-mobile-data` (`Path.home()`) | โฟลเดอร์ข้อมูล (`run.py` สร้างให้ตอนเริ่ม) |
 | `AUTH_ENABLED` | `False` | `False` = ข้ามการยืนยันตัวตน (ใช้/สร้าง user `dev@local` อัตโนมัติ); `True` = ต้องใช้ JWT Bearer หรือ `X-API-Key` |
 | `JWT_SECRET` | (ว่าง) | จำเป็นเมื่อ `AUTH_ENABLED=true` (ไม่ตั้งจะ raise `ValueError`); ถ้าปิด auth จะใช้ค่า dev ภายใน — อ่านจาก environment ใน `app/auth.py` |

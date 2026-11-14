@@ -575,6 +575,9 @@ function loadSettings() {
   document.getElementById('set-low-stock').value = settings.lowStock||5;
   document.getElementById('set-expiry-days').value = settings.expiryDays||30;
   document.getElementById('set-vat').value = settings.vat||'no';
+  const backendInput = document.getElementById('set-backend-url');
+  if (backendInput) backendInput.value = backendUrl();
+  renderBackendStatus();
 }
 function saveSettings() {
   settings.storeCode = document.getElementById('set-store-code').value;
@@ -1782,8 +1785,22 @@ function importMasterUpdate(event) {
 }
 
 // ── FULL DATA BACKUP / RESTORE ───────────────────
+// ไฟล์สำรองของร้านปัจจุบัน — ใช้ทั้งดาวน์โหลดเป็นไฟล์และส่งไป backend
+function buildBackupData(){
+  return {products,sales,purchases,debts,expenses,settings,holdBills,billCounter,categoryMapping,hiddenMappingPrefixes,exportedAt:new Date().toISOString(),version:1};
+}
+// แทนที่ข้อมูลร้านปัจจุบันด้วยไฟล์สำรอง (ไฟล์เก่าที่ไม่มี categoryMapping/hiddenMappingPrefixes ใช้ค่าเดิมในเครื่อง)
+function applyBackupData(data){
+  products=data.products||[]; sales=data.sales||[]; purchases=data.purchases||[];
+  debts=data.debts||[]; expenses=data.expenses||[]; settings=data.settings||settings;
+  holdBills=data.holdBills||[]; billCounter=data.billCounter||1; categoryMapping=data.categoryMapping||categoryMapping;
+  if(Array.isArray(data.hiddenMappingPrefixes)) hiddenMappingPrefixes=data.hiddenMappingPrefixes;
+  save();
+  renderProducts(); renderPosProducts(); updateCatChips(); updateCategorySelects();
+  renderMapping(); loadSettings();
+}
 function exportBackupJSON(){
-  const backup={products,sales,purchases,debts,expenses,settings,holdBills,billCounter,categoryMapping,exportedAt:new Date().toISOString(),version:1};
+  const backup=buildBackupData();
   const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a'); a.href=url; a.download=`qpos-backup-${currentStore().name.replace(/[\\/:*?"<>|\s]+/g,'_')}-${today()}.json`; a.click();
@@ -1797,12 +1814,7 @@ function importBackupJSON(event){
     try{
       const data=JSON.parse(e.target.result);
       if(!confirm(`การกู้คืนจะแทนที่ข้อมูลทั้งหมดของร้าน "${currentStore().name}" ในเครื่องนี้ (ร้านอื่นไม่ถูกแตะ) ดำเนินการต่อ?`)){event.target.value='';return;}
-      products=data.products||[]; sales=data.sales||[]; purchases=data.purchases||[];
-      debts=data.debts||[]; expenses=data.expenses||[]; settings=data.settings||settings;
-      holdBills=data.holdBills||[]; billCounter=data.billCounter||1; categoryMapping=data.categoryMapping||categoryMapping;
-      save();
-      renderProducts(); renderPosProducts(); updateCatChips(); updateCategorySelects();
-      renderMapping(); loadSettings();
+      applyBackupData(data);
       toast('กู้คืนข้อมูลแล้ว');
     }catch(err){
       toast('ไฟล์ไม่ถูกต้อง: '+err.message,'error');
@@ -1810,6 +1822,96 @@ function importBackupJSON(event){
     event.target.value='';
   };
   reader.readAsText(file);
+}
+
+// ── สำรองไป backend บนมือถือ (POST /api/v1/sync/snapshots) ──
+// backend เก็บไฟล์สำรองทั้งก้อน (ย้อนหลัง 30 ชุด, ข้อมูลซ้ำไม่เก็บซ้ำ) แยกร้านด้วย label
+const DEFAULT_BACKEND_URL = 'http://127.0.0.1:8000';
+function backendUrl(){
+  return String(getGlobal('backendUrl', DEFAULT_BACKEND_URL) || DEFAULT_BACKEND_URL).trim().replace(/\/+$/, '');
+}
+function saveBackendUrl(){
+  const el = document.getElementById('set-backend-url');
+  const value = (el ? el.value : '').trim().replace(/\/+$/, '');
+  if (value) {
+    let parsed = null;
+    try { parsed = new URL(value); } catch {}
+    if (!parsed || !/^https?:$/.test(parsed.protocol)) {
+      toast('URL ต้องอยู่ในรูป http://127.0.0.1:8000', 'error');
+      return false;
+    }
+  }
+  setGlobal('backendUrl', value || DEFAULT_BACKEND_URL);
+  if (el) el.value = backendUrl();
+  return true;
+}
+function snapshotLabel(){ return 'store-' + currentStoreId; }
+// backend เก็บเวลาเป็น UTC แบบไม่มี timezone — เติม Z ก่อนแปลง
+function parseServerTime(s){ return new Date(/[zZ]$|[+-]\d\d:?\d\d$/.test(s) ? s : s + 'Z'); }
+function setBackendStatus(text){
+  const el = document.getElementById('backend-status');
+  if (el) el.textContent = text;
+}
+function renderBackendStatus(){
+  const last = DB.get('lastBackendBackup', null);
+  setBackendStatus(last
+    ? `สำรองไป backend ล่าสุด: ${thDT(last)}`
+    : 'ต้องเปิด backend บนมือถือก่อน (cd backend && python run.py)');
+}
+async function snapshotRequest(path, options = {}){
+  const url = `${backendUrl()}/api/v1/sync/snapshots${path}?label=${encodeURIComponent(snapshotLabel())}`;
+  let res;
+  try {
+    res = await fetch(url, { cache: 'no-store', ...options });
+  } catch (err) {
+    throw new Error(`ติดต่อ backend ไม่ได้ — เปิด backend บนมือถือแล้วหรือยัง (${backendUrl()})`);
+  }
+  let body = null;
+  try { body = await res.json(); } catch {}
+  if (!res.ok) {
+    const detail = body && typeof body.detail === 'string' ? body.detail : `backend ตอบกลับ ${res.status}`;
+    throw Object.assign(new Error(detail), { status: res.status });
+  }
+  return { status: res.status, body };
+}
+async function backupToBackend(){
+  if (!saveBackendUrl()) return;
+  setBackendStatus('กำลังสำรองไป backend…');
+  try {
+    const { status, body } = await snapshotRequest('', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(buildBackupData()),
+    });
+    DB.set('lastBackendBackup', new Date().toISOString());
+    renderBackendStatus();
+    toast(status === 201 ? 'สำรองไป backend แล้ว' : 'ข้อมูลเหมือนชุดล่าสุดใน backend — ไม่ได้เก็บซ้ำ');
+    return body;
+  } catch (err) {
+    setBackendStatus('สำรองไม่สำเร็จ: ' + err.message);
+    toast('สำรองไป backend ไม่สำเร็จ: ' + err.message, 'error');
+  }
+}
+async function restoreFromBackend(){
+  if (!saveBackendUrl()) return;
+  setBackendStatus('กำลังดึงข้อมูลสำรองล่าสุด…');
+  try {
+    const { body } = await snapshotRequest('/latest');
+    const c = body.counts || {};
+    const ok = confirm(
+      `กู้คืนข้อมูลสำรองวันที่ ${thDT(parseServerTime(body.created_at))} ` +
+      `(สินค้า ${c.products ?? 0} รายการ, ขาย ${c.sales ?? 0} บิล) — ` +
+      `จะแทนที่ข้อมูลทั้งหมดของร้าน "${currentStore().name}" ในเครื่องนี้ (ร้านอื่นไม่ถูกแตะ) ดำเนินการต่อ?`
+    );
+    if (!ok) { renderBackendStatus(); return; }
+    applyBackupData(body.data);
+    renderBackendStatus();
+    toast('กู้คืนข้อมูลจาก backend แล้ว');
+  } catch (err) {
+    const msg = err.status === 404 ? 'ยังไม่มีข้อมูลสำรองของร้านนี้ใน backend' : err.message;
+    setBackendStatus('กู้คืนไม่สำเร็จ: ' + msg);
+    toast(msg, 'error');
+  }
 }
 
 // ── SCAN BARCODE FROM PHOTO (ถ่าย/เลือกรูป) ─────

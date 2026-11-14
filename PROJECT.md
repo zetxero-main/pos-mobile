@@ -193,7 +193,7 @@ pos-mobile/
 | `DEBUG` | true | Debug mode |
 | `DATABASE_URL` | `sqlite+aiosqlite:///./pos_mobile.db` | SQLite path |
 | `DATABASE_ECHO` | false | SQL logging |
-| `HOST` | "0.0.0.0" | Bind address |
+| `HOST` | "127.0.0.1" | Bind address (Docker ตั้ง `0.0.0.0` ใน Dockerfile) |
 | `PORT` | 8000 | Port |
 | `DATA_DIR` | `/data/data/com.termux/files/home/pos-mobile-data` | Termux data dir |
 | `CORS_ORIGINS` | `["http://localhost:8000", "http://127.0.0.1:8000", "file://", "null"]` | CORS origins |
