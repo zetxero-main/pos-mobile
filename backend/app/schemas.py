@@ -579,5 +579,25 @@ class BackupResponse(BaseModel):
     version: str
     data: dict
 
+
+class SnapshotInfo(BaseModel):
+    """ข้อมูลสรุปของ snapshot (ไม่รวมเนื้อหา)."""
+    id: int
+    label: str
+    sha256: str
+    size_bytes: int
+    counts: dict
+    created_at: datetime
+
+
+class SnapshotCreated(SnapshotInfo):
+    """ผลการเก็บ snapshot — created=False เมื่อข้อมูลเหมือนชุดที่มีอยู่แล้ว."""
+    created: bool
+
+
+class SnapshotData(SnapshotInfo):
+    """snapshot พร้อมไฟล์สำรองต้นฉบับ."""
+    data: dict
+
     class Config:
         from_attributes = True

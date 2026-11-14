@@ -2,7 +2,7 @@
 
 import json
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, WebSocket, Query
+from fastapi import FastAPI, WebSocket, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import init_db, close_db
@@ -43,6 +43,21 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# Private Network Access: หน้าเว็บ https (GitHub Pages) เรียก backend บน 127.0.0.1 ได้
+# ต่อเมื่อ preflight ตอบ Access-Control-Allow-Private-Network — ให้เฉพาะ origin ที่อยู่ใน
+# CORS_ORIGINS (ลงทะเบียนหลัง CORSMiddleware จึงครอบอยู่ชั้นนอกและเห็นคำตอบ preflight)
+@app.middleware("http")
+async def allow_private_network_access(request: Request, call_next):
+    response = await call_next(request)
+    if (
+        request.method == "OPTIONS"
+        and request.headers.get("access-control-request-private-network") == "true"
+        and request.headers.get("origin") in settings.CORS_ORIGINS
+    ):
+        response.headers["Access-Control-Allow-Private-Network"] = "true"
+    return response
 
 # Include API routes
 app.include_router(api_router)

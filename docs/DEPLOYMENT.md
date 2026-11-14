@@ -188,7 +188,7 @@ docker compose --profile backup run --rm backup
 | `DATABASE_URL` | `sqlite+aiosqlite:///./pos_mobile.db` | ที่อยู่ DB — `///./` = relative กับ **working directory** ตอนรัน | ใช้ absolute path เช่น `sqlite+aiosqlite:////data/pos_mobile.db` (compose) หรือ `sqlite+aiosqlite:////var/lib/pos-mobile/pos_mobile.db` |
 | `DATABASE_ECHO` | `False` | log SQL ทุกคำสั่ง | `false` |
 | `CORS_ORIGINS` | `["http://localhost:8000","http://127.0.0.1:8000","file://","null"]` | JSON list ของ origin ที่อนุญาต (`allow_credentials=True`, ทุก method/header — `app/main.py` บรรทัด 39–45) | ถ้า frontend กับ API อยู่ origin เดียวกันผ่าน nginx (`/api/`) ไม่จำเป็นต้องใช้ CORS — ตั้งเป็น origin จริงเท่านั้น เช่น `["https://pos.example.com"]` และ **เอา `"null"` / `"file://"` ออก** |
-| `HOST` | `0.0.0.0` | address ที่ uvicorn bind | ใน Docker ต้องเป็น `0.0.0.0`; systemd หลัง reverse proxy ใช้ `127.0.0.1` |
+| `HOST` | `127.0.0.1` | address ที่ uvicorn bind | ใน Docker ต้องเป็น `0.0.0.0`; systemd หลัง reverse proxy ใช้ `127.0.0.1` |
 | `PORT` | `8000` | พอร์ต uvicorn | ถ้าเปลี่ยน ต้องแก้ `nginx.conf` (`proxy_pass http://backend:8000`), ports และ healthcheck ใน compose/Dockerfile ด้วย |
 | `AUTH_ENABLED` | `False` | `False` = ข้ามการยืนยันตัวตนทั้งหมด (ใช้ user แรกในระบบ หรือสร้าง `dev@local` / `devpass` ให้อัตโนมัติ — `app/auth.py` บรรทัด 344–350) | **`true`** ถ้า API เข้าถึงได้จากเครือข่าย — อ่านคำเตือนใน [5.3](#53-สร้างผู้ใช้-admin-คนแรก) ก่อนเปิด |
 | `API_KEY` | `""` | ประกาศไว้ใน config แต่ **ไม่มีโค้ดส่วนไหนใช้** (API key จริงสร้างผ่าน `/api/v1/auth/api-keys` และเก็บใน DB) | ไม่ต้องตั้ง |

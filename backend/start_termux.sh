@@ -53,7 +53,7 @@ print('✅ Database initialized')
 "
 
 # Start server
-echo "🌐 Starting server on http://0.0.0.0:8000"
+echo "🌐 Starting server on http://${HOST:-127.0.0.1}:${PORT:-8000} (ตั้ง HOST ใน .env)"
 echo "📖 API docs: http://localhost:8000/docs"
 echo ""
 echo "Press Ctrl+C to stop"

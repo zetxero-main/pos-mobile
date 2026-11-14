@@ -56,7 +56,8 @@
 | Frontend ↔ backend sync schema ไม่ตรงกัน: ไฟล์ export ของ frontend (`products[].product_id`, `debts[].customer`, `holdBills`, `billCounter`, `categoryMapping` ฯลฯ) ถูก `POST /api/v1/sync` ปฏิเสธ `422` ต้องมี mapping ก่อนจะ sync ได้ | `script-pos.js` `exportBackupJSON()`, `backend/app/schemas.py` `SyncRequest` | High |
 | `/sync/restore` ทำข้อมูลหาย: sale `created_at`/`status`, PO `po_number`/`received_qty`/วันที่, debt `paid`/`payments`/`status`, และ stock movement ไม่ผูก product ใหม่ | `backend/app/services/sync_service.py` `restore_backup()` | High |
 | `POST /api/v1/sync` ไม่ idempotent — ส่ง payload เดิมซ้ำจะสร้าง sale/expense/debt ซ้ำ | `backend/app/services/sync_service.py` `sync_from_client()` | Medium |
-| ไฟล์สำรอง JSON ของ frontend ไม่มี `hiddenMappingPrefixes` (หมวดที่ซ่อนไว้กลับมาแสดงหลังกู้คืน) | `script-pos.js` `exportBackupJSON()` | Low |
+| ไฟล์สำรอง JSON ของ frontend ไม่มี `hiddenMappingPrefixes` (หมวดที่ซ่อนไว้กลับมาแสดงหลังกู้คืน) | `script-pos.js` `exportBackupJSON()` | Low — **Fixed** (`buildBackupData()` ใส่ `hiddenMappingPrefixes`, กู้คืนไฟล์เก่าที่ไม่มีฟิลด์นี้ใช้ค่าเดิม) |
+| ค่าเริ่มต้น `HOST=0.0.0.0` + `AUTH_ENABLED=False` → ใครก็ได้ใน Wi-Fi เดียวกันอ่าน/แก้ข้อมูลร้านได้ | `backend/app/config.py`, `.env.example` | High — **Fixed** (ค่าเริ่มต้นเป็น `127.0.0.1`; Dockerfile ตั้ง `HOST=0.0.0.0` เองใน container) |
 | `confirmPayDebt()` รับยอด 0 และยอดเกินหนี้ได้ (ไม่ validate) | `script-pos.js` `confirmPayDebt()` | Medium |
 | ขายเชื่อบันทึก `subtotal` เป็นยอดหลังหักส่วนลดและ `discount: 0` (ส่วนลดหายจากรายงาน/ใบเสร็จ) | `script-pos.js` `finalizeCreditSale()` | Low |
 | Import Excel จับคู่สินค้าด้วย `product_id` ที่ว่าง (`'' === ''`) — แถวที่ไม่มีรหัสอาจไปทับสินค้าที่ไม่มีรหัสตัวแรก | `script-pos.js` `importExcel()` | Medium |
@@ -134,7 +135,8 @@
 - [x] `POST /api/v1/sync/restore` กู้คืนได้ — จำนวนแถว, stock, bill_no ครบ (check เดียวกัน; ฟิลด์ที่ยังหายดู Known Issues)
 
 ### Integration
-- [ ] Sync จาก frontend → backend สำเร็จ — **ยังไม่ได้**: frontend ไม่มีปุ่ม sync และไฟล์ export ถูก `/sync` ปฏิเสธ `422` (schema mismatch — ดู Known Issues)
+- [x] สำรองจาก frontend → backend และกู้คืนกลับ — ปุ่ม "สำรองไป backend" / "กู้คืนจาก backend" ผ่าน `/api/v1/sync/snapshots` (เก็บไฟล์ export ทั้งก้อน กู้คืนได้ครบทุกฟิลด์) ทดสอบ end-to-end กับ backend จริงแล้ว
+- [ ] Sync จาก frontend → backend แบบแปลงข้อมูลลงตาราง — **ยังไม่ได้**: ไฟล์ export ถูก `/sync` ปฏิเสธ `422` (schema mismatch — ดู Known Issues) — จำเป็นเมื่อจะใช้หลายเครื่อง
 - [ ] Backup จาก backend → Restore ไป frontend สำเร็จ — ยังไม่ได้ (รูปแบบไฟล์ต่างกัน); backup → restore ภายใน backend ผ่าน API ผ่านแล้วด้วย smoke test
 - [ ] ข้อมูลสอดคล้องกัน (bill_no, stock, totals) ข้าม frontend ↔ backend — รอ sync; ฝั่ง backend อย่างเดียว smoke test ยืนยัน stock + bill_no หลัง restore
 
@@ -183,6 +185,8 @@ for row in conn.execute('SELECT sql FROM sqlite_master WHERE type=\"table\"'):
 ---
 
 ## 📅 Last Updated
+2026-11-14 — เพิ่ม backup snapshots (`/api/v1/sync/snapshots` + migration 004 + ปุ่มสำรอง/กู้คืนในหน้าตั้งค่า), CORS + Private Network Access ให้หน้าเว็บบน GitHub Pages, ค่าเริ่มต้น `HOST=127.0.0.1`, ไฟล์สำรองมี `hiddenMappingPrefixes`, แคช service worker v4 — **tests 206 passed, 0 failed** (ใหม่ 23)
+
 2026-10-21 — แก้ 🔴A restore/sync ตัด stock ซ้ำ: ตอน sync/restore สร้าง sale + stock movement แบบ `deduct_stock=False` (stock ใน payload เป็นค่าปัจจุบันอยู่แล้ว ห้ามหัก/บวกซ้ำ), sale item ผูก product ใหม่ด้วย `product_code` (id เปลี่ยนหลัง restore), และ `bulk_create` upsert ไม่ให้ payload ทับ `store_id` (sync สินค้าซ้ำรอบ 2 เดิมพัง NOT NULL) — **tests 169 passed, 0 failed** (ใหม่ 2: sync ไม่ตัดซ้ำ + restore backup ที่มีขายสำเร็จ)
 
 **วิธีรัน:** `cd ~/projects/pos-mobile/backend && python3 run.py` → http://localhost:8000

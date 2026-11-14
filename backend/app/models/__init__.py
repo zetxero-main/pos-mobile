@@ -367,3 +367,22 @@ class RefreshToken(Base):
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="refresh_tokens")
+
+class BackupSnapshot(Base):
+    """ไฟล์สำรองของหน้าเว็บ (exportBackupJSON) เก็บทั้งก้อนแบบไม่แปลง — กู้คืนได้ครบทุกฟิลด์."""
+
+    __tablename__ = "backup_snapshots"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    store_id: Mapped[int] = mapped_column(Integer, ForeignKey("stores.id", ondelete="CASCADE"), nullable=False, index=True)
+    label: Mapped[str] = mapped_column(String(100), nullable=False, default="")  # แยกร้านในหน้าเว็บ เช่น "store-1"
+    sha256: Mapped[str] = mapped_column(String(64), nullable=False)  # hash ของข้อมูล (ไม่นับ exportedAt)
+    size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    counts: Mapped[str] = mapped_column(Text, nullable=False, default="{}")  # JSON: จำนวนสินค้า/ขาย/หนี้
+    payload: Mapped[str] = mapped_column(Text, nullable=False)  # JSON ต้นฉบับ
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+    __table_args__ = (
+        UniqueConstraint("store_id", "label", "sha256", name="uq_backup_snapshots_store_label_sha"),
+        Index("ix_backup_snapshots_store_label_created", "store_id", "label", "created_at"),
+    )
