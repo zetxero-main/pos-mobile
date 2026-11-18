@@ -9,7 +9,7 @@
 ![Docker](https://img.shields.io/badge/Docker-compose-2496ED?style=flat-square&logo=docker&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=flat-square)
 
-🔗 **ใช้งานจริง:** https://zetxero-main.github.io/pos-mobile/
+🔗 **ใช้งานจริง:** https://zetxero-ceo.github.io/pos-mobile/
 
 > ⚠️ หน้าเว็บ (`script-pos.js`) เก็บข้อมูลหลักไว้ใน `localStorage` ของเบราว์เซอร์เครื่องนั้น ๆ — สำรองไปเก็บใน backend บนมือถือได้ด้วยปุ่ม **"สำรองไป backend" / "กู้คืนจาก backend"** ในหน้าตั้งค่า (ดู [สถาปัตยกรรม](#-สถาปัตยกรรม)) ส่วนการซิงก์แบบแปลงข้อมูลลงตาราง (`/api/v1/sync`) ยังไม่ได้ต่อ
 
@@ -52,7 +52,7 @@
 
 - **Frontend** (`index.html` + `script-pos.js`): อ่าน/เขียนข้อมูลผ่าน `localStorage` (key ขึ้นต้น `qpos_`) ทั้งหมด
 - **Backend** (`backend/`): REST API + WebSocket บน FastAPI/SQLite มี endpoint ครบสำหรับสินค้า ขาย สั่งซื้อ ลูกหนี้ รายจ่าย ฯลฯ รวมถึง `/api/v1/sync` สำหรับรับข้อมูลจาก localStorage (แต่ schema ยังไม่ตรงกับไฟล์ export ของ frontend — ส่งตรง ๆ จะได้ 422, ดู Known Issues ใน [TASKS.md](TASKS.md))
-- **ที่หน้าเว็บเรียก backend:** (1) `HEAD /api/v1/sync/health` ทุก 30 วินาทีเพื่อตรวจสถานะออนไลน์ (`initOnlineDetection`) และ (2) ปุ่มในหน้าตั้งค่า "สำรองไป backend" / "กู้คืนจาก backend" → `POST`/`GET /api/v1/sync/snapshots` (เก็บไฟล์สำรองทั้งก้อน ย้อนหลัง 30 ชุด แยกร้านด้วย `?label=store-<id>`) — URL ของ backend ตั้งได้ในหน้าตั้งค่า (ค่าเริ่มต้น `http://127.0.0.1:8000`) หน้าเว็บบน GitHub Pages เรียก backend บนมือถือได้เพราะ backend อนุญาต CORS + Private Network Access ให้ `https://zetxero-main.github.io` (เบราว์เซอร์อาจถามขออนุญาตครั้งแรก) — ข้อมูลหลักยังอยู่ใน localStorage
+- **ที่หน้าเว็บเรียก backend:** (1) `HEAD /api/v1/sync/health` ทุก 30 วินาทีเพื่อตรวจสถานะออนไลน์ (`initOnlineDetection`) และ (2) ปุ่มในหน้าตั้งค่า "สำรองไป backend" / "กู้คืนจาก backend" → `POST`/`GET /api/v1/sync/snapshots` (เก็บไฟล์สำรองทั้งก้อน ย้อนหลัง 30 ชุด แยกร้านด้วย `?label=store-<id>`) — URL ของ backend ตั้งได้ในหน้าตั้งค่า (ค่าเริ่มต้น `http://127.0.0.1:8000`) หน้าเว็บบน GitHub Pages เรียก backend บนมือถือได้เพราะ backend อนุญาต CORS + Private Network Access ให้ `https://zetxero-ceo.github.io` (เบราว์เซอร์อาจถามขออนุญาตครั้งแรก) — ข้อมูลหลักยังอยู่ใน localStorage
 
 ## ✨ ฟีเจอร์หลัก
 
@@ -78,7 +78,7 @@
 
 ## 🚀 วิธีใช้งาน
 
-- **ออนไลน์:** เปิด https://zetxero-main.github.io/pos-mobile/
+- **ออนไลน์:** เปิด https://zetxero-ceo.github.io/pos-mobile/
 - **ในเครื่อง:** เปิดไฟล์ `index.html` ในเบราว์เซอร์ได้ทันที — ไม่ต้อง build ไม่ต้อง install
 - **รัน backend (ไม่บังคับ):** ดู [backend/README.md](backend/README.md) หรือหัวข้อ docker compose ด้านล่าง
 

@@ -24,7 +24,7 @@ class Settings(BaseSettings):
         "file://",
         "null",
         # หน้าเว็บบน GitHub Pages เรียก backend บนมือถือเพื่อสำรองข้อมูล
-        "https://zetxero-main.github.io",
+        "https://zetxero-ceo.github.io",
     ]
 
     # Server — ค่าเริ่มต้นรับเฉพาะเครื่องนี้ (AUTH ปิดเป็นค่าเริ่มต้น ถ้าเปิด 0.0.0.0

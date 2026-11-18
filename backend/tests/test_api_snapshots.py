@@ -211,7 +211,7 @@ class TestSnapshotAPI:
 class TestBrowserAccessFromGitHubPages:
     """หน้าเว็บบน GitHub Pages (https) ต้องเรียก backend บนมือถือ (127.0.0.1) ได้"""
 
-    ORIGIN = "https://zetxero-main.github.io"
+    ORIGIN = "https://zetxero-ceo.github.io"
 
     @pytest.mark.asyncio
     async def test_preflight_allows_github_pages_and_private_network(self, client: AsyncClient):
